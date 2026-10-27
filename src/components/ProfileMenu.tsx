@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { AuthForm } from "@/components/AuthForm";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import { useSession } from "@/context/SessionContext";
 import { usePlatforms } from "@/context/PlatformContext";
 
@@ -46,30 +48,42 @@ export function ProfileMenu() {
       </button>
       {open ? (
         <div className="profile-dropdown" role="menu">
+          {authenticated ? <p className="profile-dropdown-email">{user.email || user.name}</p> : null}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setConnectOpen(true);
+            }}
+          >
+            Connected platforms
+            <span>{connected.length}</span>
+          </button>
+          {connected.length ? (
+            <div className="profile-connected-mini" aria-label="Connected apps">
+              {connected.map((app) => (
+                <span key={app.id} title={app.name}>
+                  <PlatformLogo platform={app.id} size={22} />
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="profile-connected-empty">None yet. Connect two apps to compare.</p>
+          )}
+          <Link href="/profile" className="profile-dropdown-link" onClick={() => setOpen(false)}>
+            Open profile
+          </Link>
           {authenticated ? (
-            <>
-              <p className="profile-dropdown-email">{user.email || user.name}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  setConnectOpen(true);
-                }}
-              >
-                Connected platforms
-                <span>{connected.length}</span>
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={() => {
-                  logout();
-                  setOpen(false);
-                }}
-              >
-                Log out
-              </button>
-            </>
+            <button
+              type="button"
+              className="danger"
+              onClick={() => {
+                logout();
+                setOpen(false);
+              }}
+            >
+              Log out
+            </button>
           ) : (
             <AuthForm compact />
           )}

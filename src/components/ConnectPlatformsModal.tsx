@@ -15,7 +15,8 @@ const PLATFORM_SECTIONS = [
 ] as const;
 
 export function ConnectPlatformsModal() {
-  const { connectOpen, setConnectOpen, connected, canCompare, isConnected, connectPlatform } = usePlatforms();
+  const { connectOpen, setConnectOpen, connected, canCompare, isConnected, connectPlatform, disconnectPlatform } =
+    usePlatforms();
   const [step, setStep] = useState<Step>("pick");
   const [selected, setSelected] = useState<(typeof CONNECTABLE_PLATFORMS)[number] | null>(null);
   const [phone, setPhone] = useState("");
@@ -40,7 +41,10 @@ export function ConnectPlatformsModal() {
   };
 
   const pick = (platform: (typeof CONNECTABLE_PLATFORMS)[number]) => {
-    if (isConnected(platform.id)) return;
+    if (isConnected(platform.id)) {
+      disconnectPlatform(platform.id);
+      return;
+    }
     setSelected(platform);
     setError("");
     setStep("phone");
@@ -104,11 +108,10 @@ export function ConnectPlatformsModal() {
                           type="button"
                           className={`connect-chip ${done ? "connected" : ""}`}
                           onClick={() => pick(platform)}
-                          disabled={done}
                         >
                           <PlatformLogo platform={platform.id} size={36} />
                           <span>{platform.name}</span>
-                          {done ? <em>Connected</em> : <em>{platform.kind}</em>}
+                          {done ? <em>Connected · tap to remove</em> : <em>{platform.kind}</em>}
                         </button>
                       );
                     })}
