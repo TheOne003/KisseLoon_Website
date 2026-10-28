@@ -15,7 +15,9 @@ import {
   getCartChipLabel,
 } from "@/lib/data/orbit";
 import { prefersReducedMotion } from "@/lib/motion";
+import { ORBIT_AD } from "@/lib/services/adsService";
 import type { CartLine, OrbitCopy } from "@/lib/types";
+import { HomeAd } from "./HomeAd";
 import { PlatformLogo } from "./PlatformLogo";
 import { PageHeading, SiteShell } from "./SiteShell";
 
@@ -322,6 +324,7 @@ export function OrbitAnimation({
   return (
     <SiteShell>
       <PageHeading title={copy.headerTitle} subtitle={copy.headerSubtitle} />
+      <HomeAd ad={ORBIT_AD} variant="leaderboard" />
       <div className="orbit-layout">
         <div className="orbit-stage">
           <div className="orbit-stage-frame" ref={stageRef}>

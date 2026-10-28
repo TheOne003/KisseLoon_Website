@@ -4,9 +4,11 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CompareStage } from "@/components/CompareStage";
+import { HomeAd } from "@/components/HomeAd";
 import { HowItWorks } from "@/components/HowItWorks";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { SiteShell } from "@/components/SiteShell";
+import { HOME_HERO_AD, HOME_MID_AD } from "@/lib/services/adsService";
 import { usePlatforms } from "@/context/PlatformContext";
 import { searchHref, suggestSearchItems, type SearchMode, type SearchSuggestion } from "@/lib/searchRouting";
 
@@ -74,6 +76,7 @@ export default function HomePage() {
   return (
     <SiteShell wide>
       <div className="home-stage">
+        <HomeAd ad={HOME_HERO_AD} variant="leader" />
         <section className="home-hero">
           <div className="landing">
             <p className="landing-kicker">Price comparison</p>
@@ -156,6 +159,8 @@ export default function HomePage() {
         </section>
 
         <HowItWorks />
+
+        <HomeAd ad={HOME_MID_AD} variant="billboard" />
 
         <section className="compare-board" aria-label="Platforms we compare">
           <p className="compare-label">We compare on</p>

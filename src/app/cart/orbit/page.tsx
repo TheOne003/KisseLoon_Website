@@ -2,9 +2,11 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { HomeAd } from "@/components/HomeAd";
 import { OrbitAnimation } from "@/components/OrbitAnimation";
 import { SiteShell } from "@/components/SiteShell";
 import { StatusState } from "@/components/StatusState";
+import { ORBIT_AD } from "@/lib/services/adsService";
 import { useCart } from "@/context/CartContext";
 import { getCartFingerprint } from "@/lib/cart";
 import { cartSourceFromItems, createCartSnapshotId, createComparisonContext } from "@/lib/comparison";
@@ -68,6 +70,7 @@ function Orbit() {
   if (!basket.length) {
     return (
       <SiteShell>
+        <HomeAd ad={ORBIT_AD} variant="leaderboard" />
         <StatusState
           title="Nothing to compare"
           message="Add items to the Kisse Loon cart first."

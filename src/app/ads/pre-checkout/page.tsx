@@ -2,7 +2,9 @@
 
 import { Suspense, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { HomeAd } from "@/components/HomeAd";
 import { PageHeading, SiteShell } from "@/components/SiteShell";
+import { REDIRECT_AD } from "@/lib/services/adsService";
 import { getCheckoutDestination } from "@/lib/services/checkoutService";
 import { storageKeys, readSessionJson } from "@/lib/storage";
 
@@ -29,6 +31,7 @@ function PreCheckout() {
     return (
       <SiteShell>
         <PageHeading title="Continuing to partner checkout" subtitle="Your Kisse Loon cart is kept." />
+        <HomeAd ad={REDIRECT_AD} variant="billboard" />
       </SiteShell>
     );
   }
@@ -36,6 +39,7 @@ function PreCheckout() {
   return (
     <SiteShell>
       <PageHeading title="Checkout unavailable" />
+      <HomeAd ad={REDIRECT_AD} variant="billboard" />
       <div className="card" style={{ padding: 20 }}>
         <h2 style={{ marginTop: 0 }}>
           {destination.platformName || platformName || "This platform"} redirect is not configured yet

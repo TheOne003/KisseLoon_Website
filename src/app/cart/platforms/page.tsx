@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { HomeAd } from "@/components/HomeAd";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PageHeading, SiteShell } from "@/components/SiteShell";
+import { REDIRECT_AD } from "@/lib/services/adsService";
 import { StatusState } from "@/components/StatusState";
 import { useCart } from "@/context/CartContext";
 import { compareCart } from "@/lib/services/comparisonService";
@@ -152,6 +154,7 @@ export default function CartPlatformsPage() {
   if (!result.ok || !selection) {
     return (
       <SiteShell>
+        <HomeAd ad={REDIRECT_AD} variant="leaderboard" />
         <StatusState
           title="Comparison unavailable"
           message={result.error || "Could not compare this cart. Your items were kept."}
@@ -173,6 +176,7 @@ export default function CartPlatformsPage() {
         title="Choose your platform"
         subtitle="Select a complete basket. Demo totals."
       />
+        <HomeAd ad={REDIRECT_AD} variant="leaderboard" />
         <div className="pick-summary">
           <div className="pick-summary-top">
             <div className="pick-summary-title">

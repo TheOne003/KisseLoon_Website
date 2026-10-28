@@ -7,8 +7,10 @@ import { LocationControl } from "@/components/LocationSheet";
 import { PageHeading, SiteShell } from "@/components/SiteShell";
 import { useCart } from "@/context/CartContext";
 import { usePlatforms } from "@/context/PlatformContext";
-import { groceryLineId } from "@/lib/cart";
+import { getCartFingerprint, groceryLineId } from "@/lib/cart";
+import { cartSourceFromItems, createCartSnapshotId, createComparisonContext } from "@/lib/comparison";
 import { CATEGORY_BG, GROCERY_CATEGORIES, getCatalogByCategory } from "@/lib/data/groceryCatalog";
+import { saveCartSnapshot } from "@/lib/snapshot";
 
 export default function GroceryPage() {
   const [query, setQuery] = useState("Amul Gold Milk");
@@ -16,6 +18,28 @@ export default function GroceryPage() {
   const router = useRouter();
   const { items, addGroceryItem, setQty } = useCart();
   const { canCompare, setConnectOpen } = usePlatforms();
+  const groceryLines = items.filter((item) => item.category === "grocery");
+  const footerCount = groceryLines.reduce((sum, item) => sum + item.qty, 0);
+  const footerSubtotal = groceryLines.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const distinctCount = groceryLines.length;
+
+  const startCartCompare = () => {
+    const snapshotId = createCartSnapshotId();
+    saveCartSnapshot({
+      snapshotId,
+      fingerprint: getCartFingerprint(items),
+      items: items.map((item) => ({ ...item })),
+      context: createComparisonContext({
+        mode: "cart",
+        source: cartSourceFromItems(items),
+        kind: "cart",
+        itemIds: items.map((item) => item.id),
+        cartSnapshotId: snapshotId,
+      }),
+      createdAt: Date.now(),
+    });
+    router.push(`/cart/orbit?play=${Date.now()}`);
+  };
   const products = useMemo(
     () =>
       getCatalogByCategory(category).map((product) => {
@@ -33,7 +57,7 @@ export default function GroceryPage() {
         title="Compare grocery packs"
         subtitle="Search a product, then the product-level race plays before platform prices. Grocery never uses restaurant screens."
       />
-      <div className="stack">
+      <div className="stack" style={{ paddingBottom: footerCount ? 96 : 0 }}>
         <LocationControl />
         <form
           className="search-bar"
@@ -127,6 +151,25 @@ export default function GroceryPage() {
           })}
         </div>
       </div>
+      {footerCount > 0 ? (
+        <div className="footer-bar">
+          <div className="footer-inner">
+            <div>
+              <strong>
+                {footerCount} item{footerCount === 1 ? "" : "s"}
+              </strong>
+              <div className="muted">₹{footerSubtotal} · Kisse Loon cart</div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => (distinctCount >= 2 ? startCartCompare() : router.push("/cart"))}
+            >
+              {distinctCount >= 2 ? "Compare Cart" : "View Cart"}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </SiteShell>
   );
 }

@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
+import { RACE_AD } from "@/lib/services/adsService";
 import type { RaceResult } from "@/lib/types";
+import { HomeAd } from "./HomeAd";
 import { PlatformLogo } from "./PlatformLogo";
 import { PageHeading, SiteShell } from "./SiteShell";
 
@@ -111,6 +113,7 @@ export function RaceAnimation({
             <p className="muted">Racing across available platforms…</p>
           )}
         </aside>
+        <HomeAd ad={RACE_AD} variant="mpu" />
       </div>
     </SiteShell>
   );

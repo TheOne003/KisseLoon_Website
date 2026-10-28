@@ -33,7 +33,7 @@ function CartItemCard({
   onChangeQty: (qty: number) => void;
 }) {
   return (
-    <article className="resto-card menu-card cart-line">
+    <article className={`resto-card menu-card cart-line ${item.category === "grocery" ? "grocery-card" : ""}`}>
       <div className="resto-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.image} alt="" />

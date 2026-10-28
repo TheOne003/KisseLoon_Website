@@ -3,8 +3,10 @@
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AddToCartControl } from "@/components/QuantitySelector";
+import { HomeAd } from "@/components/HomeAd";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PageHeading, SiteShell } from "@/components/SiteShell";
+import { SEARCH_GROCERY_AD } from "@/lib/services/adsService";
 import { useCart } from "@/context/CartContext";
 import { getCartFingerprint, groceryLineId } from "@/lib/cart";
 import { cartSourceFromItems, createCartSnapshotId, createComparisonContext } from "@/lib/comparison";
@@ -22,6 +24,7 @@ function Results() {
   const router = useRouter();
   const groceryLines = items.filter((item) => item.category === "grocery");
   const footerCount = groceryLines.reduce((sum, item) => sum + item.qty, 0);
+  const footerSubtotal = groceryLines.reduce((sum, item) => sum + item.price * item.qty, 0);
   const distinctCount = groceryLines.length;
 
   const startCartCompare = () => {
@@ -42,6 +45,10 @@ function Results() {
     router.push(`/cart/orbit?play=${Date.now()}`);
   };
 
+  const openRace = (productId: string) => {
+    router.push(`/grocery/race/${productId}?q=${encodeURIComponent(query)}&play=${Date.now()}`);
+  };
+
   return (
     <SiteShell>
       <PageHeading
@@ -49,7 +56,7 @@ function Results() {
         title={payload.title}
         subtitle={`${payload.foundCount} products · ${payload.subtitle}`}
       />
-      <div className="stack" style={{ paddingBottom: footerCount ? 96 : 0 }}>
+      <div className="stack resto-results" style={{ paddingBottom: footerCount ? 96 : 0 }}>
         <div className="chip-row">
           {FILTERS.map((item) => (
             <button
@@ -62,73 +69,56 @@ function Results() {
             </button>
           ))}
         </div>
-        {payload.products.map((product) => {
-          const lineId = groceryLineId(product);
-          const qty = items.find((item) => item.id === lineId)?.qty || 0;
-          const platforms = product.platforms.filter((p) => !p.unavailable);
-          return (
-            <article
-              key={product.id}
-              className="product-card"
-              style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", gap: 12, padding: 12 }}
-            >
-              <button
-                type="button"
-                style={{ border: 0, background: "transparent", padding: 0 }}
-                onClick={() =>
-                  router.push(
-                    `/grocery/race/${product.id}?q=${encodeURIComponent(query)}&play=${Date.now()}`,
-                  )
-                }
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={product.image} alt="" style={{ width: 88, height: 88, objectFit: "contain" }} />
-              </button>
-              <button
-                type="button"
-                style={{ border: 0, background: "transparent", textAlign: "left", padding: 0 }}
-                onClick={() =>
-                  router.push(
-                    `/grocery/race/${product.id}?q=${encodeURIComponent(query)}&play=${Date.now()}`,
-                  )
-                }
-              >
-                <div className="muted" style={{ fontSize: 11, letterSpacing: "0.06em" }}>
-                  {product.brand}
+        <div className="resto-list">
+          {payload.products.map((product) => {
+            const lineId = groceryLineId(product);
+            const qty = items.find((item) => item.id === lineId)?.qty || 0;
+            const platforms = product.platforms.filter((p) => !p.unavailable);
+            return (
+              <article key={product.id} className="resto-card menu-card grocery-card">
+                <div className="resto-media">
+                  <button type="button" className="menu-photo" onClick={() => openRace(product.id)}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={product.image} alt="" />
+                  </button>
                 </div>
-                <strong>{product.name}</strong>
-                <p className="muted" style={{ margin: "4px 0" }}>
-                  {product.details}
-                </p>
-                <div className="platform-logos">
-                  {platforms.map((platform) => (
-                    <PlatformLogo key={platform.id} platform={platform} size={22} />
-                  ))}
+                <button type="button" className="menu-main" onClick={() => openRace(product.id)}>
+                  <h2>{product.name}</h2>
+                  <p className="resto-cuisine">{product.details}</p>
+                  <span className="resto-dish">{product.brand}</span>
+                  <strong className="menu-price">₹{product.bestPrice}</strong>
+                  <div className="resto-cta">
+                    <span className="resto-apps" aria-label="Available on">
+                      {platforms.map((platform) => (
+                        <PlatformLogo key={platform.id} platform={platform} size={22} />
+                      ))}
+                    </span>
+                    <span className="resto-go">Compare</span>
+                  </div>
+                </button>
+                <div className="menu-add">
+                  <AddToCartControl
+                    qty={qty}
+                    label={`Add ${product.name}`}
+                    onAdd={() => addGroceryItem({ product, quantity: 1 })}
+                    onIncrement={() => addGroceryItem({ product, quantity: 1 })}
+                    onDecrement={() => setQty(lineId, qty - 1)}
+                  />
                 </div>
-                <div className="row space-between" style={{ marginTop: 8 }}>
-                  <span className="muted">Best via {product.bestPlatform}</span>
-                  <span className="price">₹{product.bestPrice}</span>
-                </div>
-              </button>
-              <AddToCartControl
-                qty={qty}
-                label={`Add ${product.name}`}
-                onAdd={() => addGroceryItem({ product, quantity: 1 })}
-                onIncrement={() => addGroceryItem({ product, quantity: 1 })}
-                onDecrement={() => setQty(lineId, qty - 1)}
-              />
-            </article>
-          );
-        })}
+              </article>
+            );
+          })}
+          <HomeAd ad={SEARCH_GROCERY_AD} variant="square" />
+        </div>
       </div>
       {footerCount > 0 ? (
         <div className="footer-bar">
           <div className="footer-inner">
             <div>
               <strong>
-                {footerCount} grocery item{footerCount === 1 ? "" : "s"}
+                {footerCount} item{footerCount === 1 ? "" : "s"}
               </strong>
-              <div className="muted">Kisse Loon cart</div>
+              <div className="muted">₹{footerSubtotal} · Kisse Loon cart</div>
             </div>
             <button
               type="button"

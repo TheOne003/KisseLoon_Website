@@ -2,8 +2,10 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { HomeAd } from "@/components/HomeAd";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PageHeading, SiteShell } from "@/components/SiteShell";
+import { SEARCH_AD } from "@/lib/services/adsService";
 import { StatusState } from "@/components/StatusState";
 import { getDemoSearchResult } from "@/lib/data/foodSearch";
 import type { RestaurantCard } from "@/lib/types";
@@ -93,6 +95,7 @@ function Results() {
     return (
       <SiteShell>
         <PageHeading title={query} subtitle="Restaurant results" />
+        <HomeAd ad={SEARCH_AD} variant="square" />
         <StatusState
           title="No restaurant results"
           message="Food search in this demo only returns restaurants for Chicken Biryani."
@@ -146,6 +149,7 @@ function Results() {
               }
             />
           ))}
+          <HomeAd ad={SEARCH_AD} variant="square" />
         </div>
       </div>
     </SiteShell>

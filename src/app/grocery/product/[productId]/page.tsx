@@ -10,6 +10,7 @@ import { getDemoGroceryProduct } from "@/lib/data/groceryCatalog";
 import { compareGroceryProduct } from "@/lib/services/comparisonService";
 import { getCheckoutDestination } from "@/lib/services/checkoutService";
 import { storageKeys, writeSessionJson } from "@/lib/storage";
+import type { GroceryPlatformOption } from "@/lib/types";
 
 function Product() {
   const params = useParams<{ productId: string }>();
@@ -17,13 +18,22 @@ function Product() {
   const query = search.get("q") || "Amul Gold Milk";
   const product = useMemo(() => getDemoGroceryProduct({ id: params.productId }), [params.productId]);
   const comparison = useMemo(() => compareGroceryProduct(product), [product]);
-  const [selectedId, setSelectedId] = useState(comparison.selection?.defaultPlatformId || product.selectedPlatformId);
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState("");
   const { addGroceryItem } = useCart();
   const router = useRouter();
   const selection = comparison.selection;
-  const selected = selection?.platforms.find((p) => p.id === selectedId) || selection?.platforms[0];
+  const platforms = selection?.platforms || [];
+
+  const openPlatform = (platform: GroceryPlatformOption) => {
+    const dest = getCheckoutDestination(platform);
+    writeSessionJson(storageKeys.checkoutIntent, { id: platform.id, name: platform.name });
+    if (dest.available && dest.url) {
+      router.push(`/ads/pre-checkout?platform=${platform.id}&name=${encodeURIComponent(platform.name)}`);
+      return;
+    }
+    setMessage(`${platform.name} checkout is not configured yet. Your Kisse Loon cart was kept.`);
+  };
 
   return (
     <SiteShell>
@@ -32,92 +42,75 @@ function Product() {
         title={product.name}
         subtitle="Choose a platform or add this product to the Kisse Loon cart."
       />
-      <div className="stack">
-        <span className="demo-badge">Demo grocery comparison</span>
-        <div className="card" style={{ padding: 16, display: "grid", gridTemplateColumns: "96px 1fr", gap: 12 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={product.image} alt="" style={{ width: 96, height: 96, objectFit: "contain" }} />
-          <div>
-            <div className="muted">{product.brandLine}</div>
-            <h2 style={{ margin: "4px 0" }}>{product.name}</h2>
-            <p className="muted">
-              {product.packSize} · {product.stockLabel}
-            </p>
+      <div className="item-layout">
+        <section className="item-panel">
+          <div className="item-photo is-grocery">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={product.image} alt="" />
           </div>
-        </div>
-        <div className="row space-between">
-          <span>Quantity</span>
-          <QuantitySelector qty={qty} onDecrement={() => setQty(Math.max(1, qty - 1))} onIncrement={() => setQty(qty + 1)} />
-        </div>
-        {(selection?.platforms || []).map((platform) => (
+          <p className="item-restaurant">{product.brandLine}</p>
+          <p className="item-copy">
+            {product.packSize} · {product.stockLabel}
+          </p>
+          {product.description ? <p className="item-copy">{product.description}</p> : null}
+          <div className="item-qty">
+            <span>Quantity</span>
+            <QuantitySelector
+              qty={qty}
+              onDecrement={() => setQty(Math.max(1, qty - 1))}
+              onIncrement={() => setQty(qty + 1)}
+            />
+          </div>
           <button
-            key={platform.id}
             type="button"
-            className="platform-card"
-            style={{
-              padding: 14,
-              width: "100%",
-              textAlign: "left",
-              border: selectedId === platform.id ? "2px solid var(--gold)" : "2px solid transparent",
+            className="btn btn-primary btn-block"
+            onClick={() => {
+              const best = product.platforms.find((p) => p.best) || product.platforms[0];
+              addGroceryItem({ product, platform: best, quantity: qty });
+              router.push(`/grocery/results?q=${encodeURIComponent(query)}`);
             }}
-            onClick={() => setSelectedId(platform.id)}
           >
-            <div className="row space-between">
-              <div className="row">
-                <PlatformLogo platform={platform} size={44} />
-                <div>
-                  <strong>{platform.name}</strong>
-                  {platform.best ? (
-                    <div className="save">{platform.saveLabel}</div>
-                  ) : (
-                    <div className="muted">{platform.subtitle}</div>
-                  )}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div className="price" style={{ color: platform.best ? "var(--success)" : undefined }}>
-                  ₹{platform.price * qty}
-                </div>
-                <div className={platform.priceNoteTone === "best" ? "save" : "muted"}>{platform.priceNote}</div>
-              </div>
-            </div>
+            Add to Cart
           </button>
-        ))}
-        {message ? <p className="error-text">{message}</p> : null}
-        <button
-          type="button"
-          className="btn btn-primary btn-block"
-          onClick={() => {
-            const platform = product.platforms.find((p) => p.id === selected?.id);
-            addGroceryItem({ product, platform, quantity: qty });
-            router.push(`/grocery/results?q=${encodeURIComponent(query)}`);
-          }}
-        >
-          Add to Kisse Loon cart
-        </button>
-        <button
-          type="button"
-          className="btn btn-navy btn-block"
-          disabled={!selected}
-          onClick={() => {
-            if (!selected) return;
-            const dest = getCheckoutDestination(selected);
-            writeSessionJson(storageKeys.checkoutIntent, { id: selected.id, name: selected.name });
-            if (dest.available && dest.url) {
-              router.push(`/ads/pre-checkout?platform=${selected.id}&name=${encodeURIComponent(selected.name)}`);
-              return;
-            }
-            setMessage(
-              `${selected.name} checkout is not configured yet. Your Kisse Loon cart was kept.`,
-            );
-          }}
-        >
-          Continue with {selected?.name || "platform"}
-        </button>
-        <p className="muted">
-          Product comparison is separate from full-cart orbit comparison. Mixed baskets are marked incomplete on
-          platforms that cannot fulfill every item.
-        </p>
+          <p className="muted item-note">
+            This is Kisse Loon’s cart — not a partner platform cart. Adding a pack does not start another race.
+          </p>
+        </section>
+
+        <section className="item-platforms" aria-label="Platform prices">
+          <div className="item-platforms-head">
+            <h2>Compare platforms</h2>
+            <span className="demo-badge">Demo prices</span>
+          </div>
+          {platforms.map((platform) => (
+            <article key={platform.id} className={`item-platform ${platform.best ? "best" : ""}`}>
+              <div className="item-platform-top">
+                <div className="item-platform-brand">
+                  <PlatformLogo platform={platform} size={44} />
+                  <div>
+                    <strong>{platform.name}</strong>
+                    <p>{platform.best ? platform.saveLabel : platform.subtitle}</p>
+                  </div>
+                </div>
+                <div className="item-platform-price">
+                  <b>₹{platform.price * qty}</b>
+                  {platform.best ? <span>Best</span> : null}
+                </div>
+              </div>
+              <div className="item-platform-actions">
+                <span className={platform.priceNoteTone === "best" ? "save" : "muted"}>{platform.priceNote}</span>
+                <button
+                  type="button"
+                  className={`btn item-go ${platform.best ? "btn-primary" : "btn-navy"}`}
+                  onClick={() => openPlatform(platform)}
+                >
+                  Continue on {platform.name}
+                </button>
+              </div>
+            </article>
+          ))}
+          {message ? <p className="error-text">{message}</p> : null}
+        </section>
       </div>
     </SiteShell>
   );
