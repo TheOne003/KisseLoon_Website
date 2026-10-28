@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
 import type { RaceResult } from "@/lib/types";
@@ -12,8 +11,6 @@ export function RaceAnimation({
   location,
   sessionKey,
   onFinished,
-  onBack,
-  backHref,
 }: {
   race: RaceResult;
   location?: string;
@@ -71,13 +68,7 @@ export function RaceAnimation({
 
   return (
     <SiteShell>
-      {backHref ? (
-        <Link href={backHref} className="page-back" onClick={onBack}>
-          ← Back
-        </Link>
-      ) : null}
       <PageHeading
-        eyebrow="Demo comparison"
         title="Price race"
         subtitle={location || "Comparing demo platform prices"}
       />
@@ -112,7 +103,6 @@ export function RaceAnimation({
           ))}
         </div>
         <aside className="race-aside">
-          <span className="demo-badge">Demo comparison</span>
           <h2>{race.savingsTitle}</h2>
           <p className="muted">{race.savingsSubtitle}</p>
           {done ? (
