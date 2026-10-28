@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { getCartSummary } from "@/lib/cart";
 import {
   CART_ORBIT_CANVAS,
@@ -114,8 +113,6 @@ export function OrbitAnimation({
   sessionKey,
   variant = "grocery",
   onFinished,
-  onBack,
-  backHref,
 }: {
   items: CartLine[];
   copy?: OrbitCopy;
@@ -324,12 +321,7 @@ export function OrbitAnimation({
 
   return (
     <SiteShell>
-      {backHref ? (
-        <Link href={backHref} className="page-back" onClick={onBack}>
-          ← Back
-        </Link>
-      ) : null}
-      <PageHeading eyebrow="Demo comparison" title={copy.headerTitle} subtitle={copy.headerSubtitle} />
+      <PageHeading title={copy.headerTitle} subtitle={copy.headerSubtitle} />
       <div className="orbit-layout">
         <div className="orbit-stage">
           <div className="orbit-stage-frame" ref={stageRef}>
