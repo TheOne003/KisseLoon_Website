@@ -133,7 +133,7 @@ export default function HomePage() {
                   <ul className="landing-suggest" id="home-suggest" role="listbox">
                     {suggestions.length ? (
                       suggestions.map((item) => (
-                        <li key={item.id} role="option">
+                        <li key={item.id} role="option" aria-selected="false">
                           <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => pick(item)}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={item.image} alt="" />

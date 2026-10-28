@@ -181,7 +181,7 @@ export function ConnectPlatformsModal() {
                 type="button"
                 className="btn btn-primary btn-block"
                 disabled={otp.length !== 6 || busy}
-                onClick={confirmOtp}
+                onClick={() => void confirmOtp()}
               >
                 {busy ? "Verifying…" : "Connect"}
               </button>
