@@ -26,7 +26,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 type StoredAccount = {
   email: string;
   name: string;
-  password: string;
 };
 
 function normalizeEmail(email: string) {
@@ -50,7 +49,10 @@ function userFromAccount(account: StoredAccount, prev: SessionUser = DEFAULT_USE
 }
 
 function readAccounts(): StoredAccount[] {
-  return readJson<StoredAccount[]>(storageKeys.accounts, []);
+  const raw = readJson<Array<{ email?: string; name?: string }>>(storageKeys.accounts, []);
+  return raw
+    .filter((item) => item.email)
+    .map((item) => ({ email: normalizeEmail(item.email || ""), name: (item.name || "").trim() }));
 }
 
 function writeAccounts(accounts: StoredAccount[]) {
@@ -74,8 +76,9 @@ interface SessionState {
   phoneDigits: string;
   formattedPhone: string;
   login: (phone: string) => void;
-  loginWithEmail: (email: string, password: string) => string | null;
-  registerAccount: (name: string, email: string, password: string) => string | null;
+  hasEmailAccount: (email: string) => boolean;
+  loginWithEmail: (email: string) => string | null;
+  registerAccount: (name: string, email: string) => string | null;
   logout: () => void;
   updateProfile: (patch: Partial<Pick<SessionUser, "name" | "email">>) => void;
   setLocation: (value: string) => void;
@@ -135,26 +138,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setAuthenticated(true);
   }, []);
 
-  const loginWithEmail = useCallback((email: string, password: string) => {
+  const hasEmailAccount = useCallback((email: string) => {
+    const trimmed = normalizeEmail(email);
+    return readAccounts().some((item) => item.email === trimmed);
+  }, []);
+
+  const loginWithEmail = useCallback((email: string) => {
     const trimmed = normalizeEmail(email);
     if (!EMAIL_RE.test(trimmed)) return "Enter a valid email.";
-    if (!password) return "Enter your password.";
     const account = readAccounts().find((item) => item.email === trimmed);
     if (!account) return "No account for this email. Register first.";
-    if (account.password !== password) return "Wrong password.";
     signIn(userFromAccount(account));
     return null;
   }, [signIn]);
 
-  const registerAccount = useCallback((name: string, email: string, password: string) => {
+  const registerAccount = useCallback((name: string, email: string) => {
     const trimmedName = name.trim();
     const trimmed = normalizeEmail(email);
     if (trimmedName.length < 2) return "Enter your name.";
     if (!EMAIL_RE.test(trimmed)) return "Enter a valid email.";
-    if (password.length < 6) return "Password must be at least 6 characters.";
     const accounts = readAccounts();
     if (accounts.some((item) => item.email === trimmed)) return "That email is already registered. Log in.";
-    const account: StoredAccount = { email: trimmed, name: trimmedName, password };
+    const account: StoredAccount = { email: trimmed, name: trimmedName };
     writeAccounts([...accounts, account]);
     signIn(userFromAccount(account));
     return null;
@@ -203,6 +208,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       phoneDigits: user.phone,
       formattedPhone: formatProfilePhone(user.phone),
       login,
+      hasEmailAccount,
       loginWithEmail,
       registerAccount,
       logout,
@@ -217,6 +223,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       location,
       addresses,
       login,
+      hasEmailAccount,
       loginWithEmail,
       registerAccount,
       logout,

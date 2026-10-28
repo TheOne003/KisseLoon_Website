@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { OtpBar } from "@/components/OtpBar";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { usePlatforms } from "@/context/PlatformContext";
 import { CONNECTABLE_PLATFORMS, MIN_COMPARE_PLATFORMS } from "@/lib/platforms";
@@ -66,10 +67,10 @@ export function ConnectPlatformsModal() {
     setStep("otp");
   };
 
-  const confirmOtp = async () => {
-    if (!selected) return;
+  const confirmOtp = async (code = otp) => {
+    if (!selected || busy || code.length !== 6) return;
     setBusy(true);
-    const result = await verifyOtp(otp);
+    const result = await verifyOtp(code);
     setBusy(false);
     if (!result.ok) {
       setError(result.error || "Invalid OTP");
@@ -165,14 +166,15 @@ export function ConnectPlatformsModal() {
             <div className="stack">
               <span className="demo-badge">Demo OTP {DEMO_OTP}</span>
               <label htmlFor="connect-otp">OTP</label>
-              <input
+              <OtpBar
                 id="connect-otp"
-                className="connect-otp-input"
-                inputMode="numeric"
-                maxLength={6}
                 value={otp}
-                onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="6-digit code"
+                disabled={busy}
+                onChange={(value) => {
+                  setOtp(value);
+                  setError("");
+                  if (value.length === 6) void confirmOtp(value);
+                }}
               />
               {error ? <p className="error-text">{error}</p> : null}
               <button

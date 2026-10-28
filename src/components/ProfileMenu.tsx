@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { AuthForm } from "@/components/AuthForm";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { useSession } from "@/context/SessionContext";
@@ -9,7 +8,7 @@ import { usePlatforms } from "@/context/PlatformContext";
 
 export function ProfileMenu() {
   const { authenticated, user, logout } = useSession();
-  const { connected, setConnectOpen } = usePlatforms();
+  const { connected, setConnectOpen, disconnectPlatform } = usePlatforms();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +47,32 @@ export function ProfileMenu() {
       </button>
       {open ? (
         <div className="profile-dropdown" role="menu">
-          {authenticated ? <p className="profile-dropdown-email">{user.email || user.name}</p> : null}
+          {authenticated ? (
+            <p className="profile-dropdown-email">{user.email || user.name}</p>
+          ) : null}
+          <div className="profile-connected-head">
+            <span>Connected platforms</span>
+            <span>{connected.length}</span>
+          </div>
+          {connected.length ? (
+            <ul className="profile-connected-list">
+              {connected.map((app) => (
+                <li key={app.id}>
+                  <PlatformLogo platform={app.id} size={22} />
+                  <span title={app.name}>{app.name}</span>
+                  <button
+                    type="button"
+                    className="profile-connected-remove"
+                    onClick={() => disconnectPlatform(app.id)}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="profile-connected-empty">None yet. Connect two apps to compare.</p>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -56,23 +80,8 @@ export function ProfileMenu() {
               setConnectOpen(true);
             }}
           >
-            Connected platforms
-            <span>{connected.length}</span>
+            {connected.length ? "Connect more" : "Connect apps"}
           </button>
-          {connected.length ? (
-            <div className="profile-connected-mini" aria-label="Connected apps">
-              {connected.map((app) => (
-                <span key={app.id} title={app.name}>
-                  <PlatformLogo platform={app.id} size={22} />
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="profile-connected-empty">None yet. Connect two apps to compare.</p>
-          )}
-          <Link href="/profile" className="profile-dropdown-link" onClick={() => setOpen(false)}>
-            Open profile
-          </Link>
           {authenticated ? (
             <button
               type="button"
