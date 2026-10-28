@@ -99,7 +99,6 @@ export default function CartPage() {
   return (
     <SiteShell>
       <PageHeading
-        eyebrow="Cart"
         title="Kisse Loon cart"
         subtitle="Compare the full basket, then pick one platform. Demo estimate."
       />
