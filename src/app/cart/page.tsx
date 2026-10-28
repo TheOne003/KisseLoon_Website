@@ -13,9 +13,15 @@ import type { CartLine } from "@/lib/types";
 
 const TABS = [
   { id: "all", label: "All" },
-  { id: "food", label: "🍕 Food" },
-  { id: "grocery", label: "🛒 Grocery" },
+  { id: "food", label: "Food" },
+  { id: "grocery", label: "Grocery" },
 ];
+
+function dishClass(item: CartLine) {
+  if (item.tag === "veg") return "is-veg";
+  if (item.tag === "in-stock") return "is-stock";
+  return "is-nonveg";
+}
 
 function CartItemCard({
   item,
@@ -26,35 +32,32 @@ function CartItemCard({
   onRemove: () => void;
   onChangeQty: (qty: number) => void;
 }) {
-  const tagClass = item.tag === "veg" ? "tag-veg" : item.tag === "in-stock" ? "tag-stock" : "tag-nonveg";
   return (
-    <article className="cart-item" style={{ display: "grid", gridTemplateColumns: "88px 1fr", gap: 12, padding: 12 }}>
-      <div style={{ position: "relative" }}>
+    <article className="resto-card menu-card cart-line">
+      <div className="resto-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={item.image} alt="" style={{ width: 88, height: 88, objectFit: "cover", borderRadius: 14 }} />
-        <span className={`tag ${tagClass}`} style={{ position: "absolute", left: 6, bottom: 6 }}>
-          {item.tagLabel}
-        </span>
+        <img src={item.image} alt="" />
       </div>
-      <div>
-        <div className="row space-between">
-          <div>
-            <strong>{item.name}</strong>
-            <p className="muted" style={{ margin: "4px 0" }}>
-              {item.subtitle}
-            </p>
-          </div>
-          <button type="button" className="icon-btn" aria-label={`Remove ${item.name}`} onClick={onRemove}>
-            ⌫
-          </button>
-        </div>
-        <div className="row space-between">
-          <div>
-            <span className="price">₹{item.price}</span> <span className="mrp">₹{item.mrp}</span>
-            <div className="save">{item.bestOn}</div>
-          </div>
-          <QuantitySelector qty={item.qty} onDecrement={() => onChangeQty(item.qty - 1)} onIncrement={() => onChangeQty(item.qty + 1)} />
-        </div>
+      <div className="cart-line-main">
+        <h2>{item.name}</h2>
+        <p className="resto-cuisine">{item.subtitle}</p>
+        <span className={`resto-dish ${dishClass(item)}`}>{item.tagLabel}</span>
+        <p className="cart-line-price">
+          <strong className="menu-price">₹{item.price}</strong>
+          <span className="mrp">₹{item.mrp}</span>
+        </p>
+        <p className="save">{item.bestOn}</p>
+        <button type="button" className="cart-remove" onClick={onRemove}>
+          Remove
+        </button>
+      </div>
+      <div className="menu-add">
+        <QuantitySelector
+          qty={item.qty}
+          onDecrement={() => onChangeQty(item.qty - 1)}
+          onIncrement={() => onChangeQty(item.qty + 1)}
+          label={`${item.name} quantity`}
+        />
       </div>
     </article>
   );
@@ -98,88 +101,98 @@ export default function CartPage() {
       <PageHeading
         eyebrow="Cart"
         title="Kisse Loon cart"
-        subtitle="This cart belongs to Kisse Loon. Compare the full basket with orbit, then choose one platform."
+        subtitle="Compare the full basket, then pick one platform. Demo estimate."
       />
-      <div className="stack">
-        <div className="chip-row">
-          {TABS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`chip ${tab === item.id ? "active" : ""}`}
-              onClick={() => setTab(item.id)}
-            >
-              {item.label} ({item.id === "all" ? summary.totalCount : item.id === "food" ? summary.foodCount : summary.groceryCount})
+      {!items.length ? (
+        <StatusState
+          title="Your Kisse Loon cart is empty"
+          message="Add dishes from a restaurant menu or grocery products, then compare the full basket."
+          action={
+            <button type="button" className="btn btn-primary" onClick={() => router.push("/")}>
+              Continue shopping
             </button>
-          ))}
-        </div>
-        {mixed ? (
-          <div className="card" style={{ padding: 14, background: "#fff7ed" }}>
-            <strong>Dual basket</strong>
-            <p className="muted" style={{ margin: "4px 0 0" }}>
-              Food and grocery items are compared independently. A platform is only selectable if it can fulfill every
-              item in this cart.
-            </p>
+          }
+        />
+      ) : (
+        <div className="cart-layout">
+          <div className="cart-list">
+            <div className="chip-row">
+              {TABS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`chip ${tab === item.id ? "active" : ""}`}
+                  onClick={() => setTab(item.id)}
+                >
+                  {item.label} ·{" "}
+                  {item.id === "all" ? summary.totalCount : item.id === "food" ? summary.foodCount : summary.groceryCount}
+                </button>
+              ))}
+            </div>
+            {mixed ? (
+              <p className="cart-mix">
+                Food and grocery are compared separately. A platform is selectable only if it can fulfill every item.
+              </p>
+            ) : null}
+            {visibleFood.length ? (
+              <section className="cart-section">
+                <h2>Food · {summary.foodCount}</h2>
+                <div className="resto-list menu-list">
+                  {visibleFood.map((item) => (
+                    <CartItemCard
+                      key={item.id}
+                      item={item}
+                      onRemove={() => removeItem(item.id)}
+                      onChangeQty={(qty) => setQty(item.id, qty)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {visibleGrocery.length ? (
+              <section className="cart-section">
+                <h2>Grocery · {summary.groceryCount}</h2>
+                <div className="resto-list menu-list">
+                  {visibleGrocery.map((item) => (
+                    <CartItemCard
+                      key={item.id}
+                      item={item}
+                      onRemove={() => removeItem(item.id)}
+                      onChangeQty={(qty) => setQty(item.id, qty)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
-        ) : null}
-        {!items.length ? (
-          <StatusState
-            title="Your Kisse Loon cart is empty"
-            message="Add dishes from a restaurant menu or grocery products, then compare the full basket."
-            action={
-              <button type="button" className="btn btn-primary" onClick={() => router.push("/")}>
-                Continue shopping
-              </button>
-            }
-          />
-        ) : null}
-        {visibleFood.length ? <h3 style={{ margin: 0 }}>🍕 Food Cart · {summary.foodCount}</h3> : null}
-        {visibleFood.map((item) => (
-          <CartItemCard
-            key={item.id}
-            item={item}
-            onRemove={() => removeItem(item.id)}
-            onChangeQty={(qty) => setQty(item.id, qty)}
-          />
-        ))}
-        {visibleGrocery.length ? <h3 style={{ margin: 0 }}>🛒 Grocery Cart · {summary.groceryCount}</h3> : null}
-        {visibleGrocery.map((item) => (
-          <CartItemCard
-            key={item.id}
-            item={item}
-            onRemove={() => removeItem(item.id)}
-            onChangeQty={(qty) => setQty(item.id, qty)}
-          />
-        ))}
-        {items.length ? (
-          <aside className="card" style={{ padding: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Estimate</h3>
-            <div className="row space-between">
+          <aside className="cart-summary">
+            <h2>Estimate</h2>
+            <div className="cart-summary-row">
               <span>Items</span>
               <span>₹{summary.foodSubtotal + summary.grocerySubtotal}</span>
             </div>
-            <div className="row space-between">
+            <div className="cart-summary-row">
               <span>Delivery</span>
               <span>₹{summary.deliveryFee}</span>
             </div>
-            <div className="row space-between save">
+            <div className="cart-summary-row save">
               <span>Estimated savings</span>
               <span>−₹{summary.saveAmount}</span>
             </div>
-            <div className="row space-between" style={{ marginTop: 8, fontWeight: 800 }}>
+            <div className="cart-summary-row cart-summary-total">
               <span>Total</span>
               <span>₹{summary.total}</span>
             </div>
             <p className="muted">{summary.optimizedLine} · demo estimate</p>
-            <button type="button" className="btn btn-primary btn-block" onClick={startCompare}>
-              Compare Cart Prices
+            <button type="button" className="btn btn-primary item-go" onClick={startCompare}>
+              Compare cart
             </button>
-            <button type="button" className="btn btn-ghost btn-block" onClick={() => router.push("/")}>
+            <button type="button" className="btn btn-ghost" onClick={() => router.push("/")}>
               Continue shopping
             </button>
           </aside>
-        ) : null}
-      </div>
+        </div>
+      )}
     </SiteShell>
   );
 }

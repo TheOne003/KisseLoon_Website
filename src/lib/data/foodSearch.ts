@@ -58,10 +58,6 @@ export function normalizeSearchQuery(value = ""): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-export function getDemoSearchResult(query: string): FoodSearchResult | null {
-  return DEMO_SEARCHES[normalizeSearchQuery(query)] ?? null;
-}
-
 export const POPULAR_DISHES = [
   {
     id: "biryani",
@@ -85,3 +81,16 @@ export const POPULAR_DISHES = [
     image: "/assets/food/paneer-tikka.jpg",
   },
 ];
+
+export function getDemoSearchResult(query: string): FoodSearchResult | null {
+  const key = normalizeSearchQuery(query);
+  if (DEMO_SEARCHES[key]) return DEMO_SEARCHES[key];
+  const popular = POPULAR_DISHES.find((dish) => normalizeSearchQuery(dish.name) === key);
+  if (!popular) return null;
+  const base = DEMO_SEARCHES["chicken biryani"];
+  return {
+    query: popular.name,
+    location: base.location,
+    restaurants: base.restaurants,
+  };
+}

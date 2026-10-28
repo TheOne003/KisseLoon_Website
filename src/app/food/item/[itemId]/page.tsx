@@ -70,12 +70,12 @@ function ItemDetail() {
       name: platform.label || platform.name,
     });
     if (dest.available && dest.url) {
-      router.push(`/ads/pre-checkout?platform=${platform.id}&name=${encodeURIComponent(platform.label || platform.name || "")}`);
+      router.push(
+        `/ads/pre-checkout?platform=${platform.id}&name=${encodeURIComponent(platform.label || platform.name || "")}`,
+      );
       return;
     }
-    setMessage(
-      `${platform.label || platform.name} checkout is not configured yet. Your Kisse Loon cart was kept.`,
-    );
+    setMessage(`${platform.label || platform.name} checkout is not configured yet. Your Kisse Loon cart was kept.`);
   };
 
   if (!item) {
@@ -89,82 +89,92 @@ function ItemDetail() {
 
   return (
     <SiteShell>
-      <PageHeading title={item.name} subtitle={`${restaurant.name} · quantity and add to cart only — no extra race`} />
-      <div className="stack">
-        <section className="hero-banner" style={{ minHeight: 220 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.detailImage} alt="" />
-          <div className="media-scrim" />
-        </section>
-        <div>
+      <PageHeading eyebrow="Dish" title={item.name} subtitle={`${restaurant.name} · demo prices`} />
+      <div className="item-layout">
+        <section className="item-panel">
+          <div className="item-photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.detailImage || item.image} alt="" />
+            {item.tag ? <span className="resto-badge">{item.tag}</span> : null}
+          </div>
           <span className={`tag ${item.dietary === "VEG" ? "tag-veg" : "tag-nonveg"}`}>{item.dietary}</span>
-          <h2 style={{ margin: "8px 0 6px" }}>{item.name}</h2>
-          <p className="muted">{item.description}</p>
-          <p className="save">{item.bestPriceText}</p>
-        </div>
-        <div className="row space-between">
-          <span>Quantity</span>
-          <QuantitySelector qty={qty} onDecrement={() => setQty(Math.max(1, qty - 1))} onIncrement={() => setQty(qty + 1)} />
-        </div>
-        <h3 style={{ margin: 0 }}>Platform prices</h3>
-        {platforms.map((platform) => {
-          const fees = breakdown(platform, qty);
-          const open = expanded === platform.id;
-          return (
-            <article key={platform.id} className="platform-card" style={{ padding: 12, position: "relative" }}>
-              {platform.best ? (
-                <div className="swipe-hint" style={{ background: platform.color || "#059669" }}>
-                  Order on {platform.label}
-                </div>
-              ) : null}
-              <div className="row space-between">
-                <div className="row">
-                  <PlatformLogo platform={platform} size={40} />
-                  <div>
-                    <strong>{platform.label}</strong>
-                    <div className="muted">{platform.note}</div>
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div className="price" style={{ color: platform.best ? "var(--success)" : undefined }}>
-                    ₹{(platform.price || 0) * qty}
-                  </div>
-                  {platform.best ? <div className="save">Best</div> : null}
-                </div>
-              </div>
-              <div className="row space-between" style={{ marginTop: 10 }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setExpanded(open ? null : platform.id)}>
-                  {open ? "Hide fees" : "Fee breakdown"}
-                </button>
-                <button type="button" className="btn btn-navy" onClick={() => openPlatform(platform)}>
-                  Continue on {platform.label}
-                </button>
-              </div>
-              {open ? (
-                <div style={{ marginTop: 8 }}>
-                  {fees.lines.map((line) => (
-                    <div key={line.label} className="row space-between">
-                      <span className="muted">{line.label}</span>
-                      <span>₹{line.value}</span>
+          <p className="item-restaurant">{restaurant.name}</p>
+          <p className="item-copy">{item.description}</p>
+          {item.bestPriceText ? <p className="save">{item.bestPriceText}</p> : null}
+          <div className="item-qty">
+            <span>Quantity</span>
+            <QuantitySelector
+              qty={qty}
+              onDecrement={() => setQty(Math.max(1, qty - 1))}
+              onIncrement={() => setQty(qty + 1)}
+            />
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary btn-block"
+            onClick={() => {
+              addFoodItem({ item, restaurant, quantity: qty });
+              router.push(`/food/menu/${restaurant.id}?q=${encodeURIComponent(query)}`);
+            }}
+          >
+            Add to Cart
+          </button>
+          <p className="muted item-note">
+            This is Kisse Loon’s cart — not a partner platform cart. Adding a dish does not start another race.
+          </p>
+        </section>
+
+        <section className="item-platforms" aria-label="Platform prices">
+          <div className="item-platforms-head">
+            <h2>Compare platforms</h2>
+            <span className="demo-badge">Demo prices</span>
+          </div>
+          {platforms.map((platform) => {
+            const fees = breakdown(platform, qty);
+            const open = expanded === platform.id;
+            const label = platform.label || platform.name || platform.id;
+            return (
+              <article key={platform.id} className={`item-platform ${platform.best ? "best" : ""}`}>
+                <div className="item-platform-top">
+                  <div className="item-platform-brand">
+                    <PlatformLogo platform={platform} size={44} />
+                    <div>
+                      <strong>{label}</strong>
+                      <p>{platform.note}</p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="item-platform-price">
+                    <b>₹{fees.payable}</b>
+                    {platform.best ? <span>Best</span> : null}
+                  </div>
                 </div>
-              ) : null}
-            </article>
-          );
-        })}
-        {message ? <p className="error-text">{message}</p> : null}
-        <button
-          type="button"
-          className="btn btn-primary btn-block"
-          onClick={() => {
-            addFoodItem({ item, restaurant, quantity: qty });
-            router.push(`/food/menu/${restaurant.id}?q=${encodeURIComponent(query)}`);
-          }}
-        >
-          Add to Cart
-        </button>
-        <p className="muted">This is Kisse Loon’s cart — not a partner platform cart. Adding a dish does not start another race.</p>
+                {open ? (
+                  <ul className="item-fees">
+                    {fees.lines.map((line) => (
+                      <li key={line.label}>
+                        <span>{line.label}</span>
+                        <strong>₹{line.value}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="item-platform-actions">
+                  <button type="button" className="item-fee-btn" onClick={() => setExpanded(open ? null : platform.id)}>
+                    {open ? "Hide fees" : "Fee breakdown"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn item-go ${platform.best ? "btn-primary" : "btn-navy"}`}
+                    onClick={() => openPlatform(platform)}
+                  >
+                    Continue on {label}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+          {message ? <p className="error-text">{message}</p> : null}
+        </section>
       </div>
     </SiteShell>
   );

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { RaceAnimation } from "@/components/RaceAnimation";
+import { SiteShell } from "@/components/SiteShell";
 import { StatusState } from "@/components/StatusState";
 import { getDemoGroceryProduct } from "@/lib/data/groceryCatalog";
 import { compareGroceryProduct } from "@/lib/services/comparisonService";
@@ -29,19 +30,17 @@ function Race() {
 
   if (!comparison.ok || !comparison.race) {
     return (
-      <div className="screen">
-        <div className="screen-body">
-          <StatusState
-            title="Comparison unavailable"
-            message={comparison.error || "Not enough grocery platform prices."}
-            action={
-              <button type="button" className="btn btn-primary" onClick={goProduct}>
-                Open product
-              </button>
-            }
-          />
-        </div>
-      </div>
+      <SiteShell>
+        <StatusState
+          title="Comparison unavailable"
+          message={comparison.error || "Not enough grocery platform prices."}
+          action={
+            <button type="button" className="btn btn-primary" onClick={goProduct}>
+              Open product
+            </button>
+          }
+        />
+      </SiteShell>
     );
   }
 

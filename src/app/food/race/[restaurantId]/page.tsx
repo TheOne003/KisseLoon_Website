@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { RaceAnimation } from "@/components/RaceAnimation";
+import { SiteShell } from "@/components/SiteShell";
 import { StatusState } from "@/components/StatusState";
 import { getDemoSearchResult } from "@/lib/data/foodSearch";
 import { getDemoRestaurantForCard } from "@/lib/data/restaurants";
@@ -45,19 +46,17 @@ function Race() {
 
   if (!comparison.ok || !comparison.race) {
     return (
-      <div className="screen">
-        <div className="screen-body">
-          <StatusState
-            title="Comparison unavailable"
-            message={comparison.error || "Not enough platform prices for this restaurant."}
-            action={
-              <button type="button" className="btn btn-primary" onClick={goMenu}>
-                Open menu anyway
-              </button>
-            }
-          />
-        </div>
-      </div>
+      <SiteShell>
+        <StatusState
+          title="Comparison unavailable"
+          message={comparison.error || "Not enough platform prices for this restaurant."}
+          action={
+            <button type="button" className="btn btn-primary" onClick={goMenu}>
+              Open menu anyway
+            </button>
+          }
+        />
+      </SiteShell>
     );
   }
 

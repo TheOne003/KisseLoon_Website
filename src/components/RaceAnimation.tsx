@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
 import type { RaceResult } from "@/lib/types";
-import { ScreenHeader } from "./Header";
 import { PlatformLogo } from "./PlatformLogo";
+import { PageHeading, SiteShell } from "./SiteShell";
 
 export function RaceAnimation({
   race,
@@ -69,10 +70,18 @@ export function RaceAnimation({
   }, [sessionKey, race]);
 
   return (
-    <div className="screen">
-      <ScreenHeader title="Price race" subtitle={location || "Comparing demo platform prices"} backHref={backHref} onBack={onBack} />
-      <div className="screen-body narrow stack">
-        <span className="demo-badge">Demo comparison</span>
+    <SiteShell>
+      {backHref ? (
+        <Link href={backHref} className="page-back" onClick={onBack}>
+          ← Back
+        </Link>
+      ) : null}
+      <PageHeading
+        eyebrow="Demo comparison"
+        title="Price race"
+        subtitle={location || "Comparing demo platform prices"}
+      />
+      <div className="race-page">
         <div className="race-stage">
           {race.racers.map((racer, index) => (
             <div key={racer.id} className="lane" style={{ background: racer.laneBg }}>
@@ -91,9 +100,9 @@ export function RaceAnimation({
                   transition: `left ${racer.duration}ms cubic-bezier(0.22, 1, 0.36, 1)`,
                 }}
               >
-                <PlatformLogo platform={racer} size={44} />
+                <PlatformLogo platform={racer} size={48} />
                 <div className="racer-stats">
-                  <div style={{ fontSize: 12, fontWeight: 700 }}>{racer.name}</div>
+                  <div className="racer-name">{racer.name}</div>
                   <div className="price" style={{ color: racer.priceColor }}>
                     ₹{racer.price}
                   </div>
@@ -102,18 +111,17 @@ export function RaceAnimation({
             </div>
           ))}
         </div>
-        <div className="card" style={{ padding: 18 }}>
-          <h2 style={{ margin: "0 0 6px" }}>{race.savingsTitle}</h2>
+        <aside className="race-aside">
+          <span className="demo-badge">Demo comparison</span>
+          <h2>{race.savingsTitle}</h2>
           <p className="muted">{race.savingsSubtitle}</p>
           {done ? (
-            <p className="save" style={{ marginTop: 8 }}>
-              Opening the next step…
-            </p>
+            <p className="save">Opening the next step…</p>
           ) : (
             <p className="muted">Racing across available platforms…</p>
           )}
-        </div>
+        </aside>
       </div>
-    </div>
+    </SiteShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CompareStage } from "@/components/CompareStage";
@@ -8,7 +8,7 @@ import { HowItWorks } from "@/components/HowItWorks";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { SiteShell } from "@/components/SiteShell";
 import { usePlatforms } from "@/context/PlatformContext";
-import { searchHref, type SearchMode } from "@/lib/searchRouting";
+import { searchHref, suggestSearchItems, type SearchMode, type SearchSuggestion } from "@/lib/searchRouting";
 
 const FOOD_PLATFORMS = [
   { id: "swiggy", name: "Swiggy" },
@@ -25,16 +25,49 @@ const GROCERY_PLATFORMS = [
 export default function HomePage() {
   const [mode, setMode] = useState<SearchMode>("food");
   const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { canCompare, setConnectOpen } = usePlatforms();
+  const suggestions = useMemo(() => suggestSearchItems(query, mode), [query, mode]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!searchRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", onPointer);
+    return () => window.removeEventListener("mousedown", onPointer);
+  }, [open]);
+
+  const go = (href: string) => {
+    if (!canCompare) {
+      setConnectOpen(true);
+      return;
+    }
+    setOpen(false);
+    router.push(href);
+  };
+
+  const pick = (item: SearchSuggestion) => {
+    setQuery(item.name);
+    go(item.href);
+  };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    const exact = suggestions.find((item) => item.name.toLowerCase() === query.trim().toLowerCase());
+    const match = exact || (suggestions.length === 1 ? suggestions[0] : null);
+    if (match) {
+      pick(match);
+      return;
+    }
     if (!canCompare) {
       setConnectOpen(true);
       return;
     }
     const value = query.trim() || (mode === "food" ? "Chicken Biryani" : "Amul Gold Milk");
+    setOpen(false);
     router.push(searchHref(value, mode));
   };
 
@@ -71,21 +104,51 @@ export default function HomePage() {
                   Grocery
                 </button>
               </div>
-              <div className="landing-search-row">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/icons/search.svg" alt="" className="landing-search-icon" />
-                <label className="sr-only" htmlFor="home-search">
-                  Search {mode}
-                </label>
-                <input
-                  id="home-search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={mode === "food" ? "Search a dish" : "Search groceries"}
-                />
-                <button type="submit" className="btn btn-primary">
-                  Compare
-                </button>
+              <div className="landing-search-wrap" ref={searchRef}>
+                <div className="landing-search-row">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/assets/icons/search.svg" alt="" className="landing-search-icon" />
+                  <label className="sr-only" htmlFor="home-search">
+                    Search {mode}
+                  </label>
+                  <input
+                    id="home-search"
+                    role="combobox"
+                    aria-expanded={open}
+                    aria-controls="home-suggest"
+                    aria-autocomplete="list"
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      setOpen(true);
+                    }}
+                    onFocus={() => setOpen(true)}
+                    placeholder={mode === "food" ? "Search a dish" : "Search groceries"}
+                  />
+                  <button type="submit" className="btn btn-primary">
+                    Compare
+                  </button>
+                </div>
+                {open ? (
+                  <ul className="landing-suggest" id="home-suggest" role="listbox">
+                    {suggestions.length ? (
+                      suggestions.map((item) => (
+                        <li key={item.id} role="option">
+                          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => pick(item)}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item.image} alt="" />
+                            <span>
+                              <strong>{item.name}</strong>
+                              <em>{item.subtitle}</em>
+                            </span>
+                          </button>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="landing-suggest-empty">No matching items. Try another name.</li>
+                    )}
+                  </ul>
+                ) : null}
               </div>
             </form>
           </div>

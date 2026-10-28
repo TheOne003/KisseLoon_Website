@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OrbitAnimation } from "@/components/OrbitAnimation";
+import { SiteShell } from "@/components/SiteShell";
 import { StatusState } from "@/components/StatusState";
 import { useCart } from "@/context/CartContext";
 import { getCartFingerprint } from "@/lib/cart";
@@ -66,19 +67,17 @@ function Orbit() {
 
   if (!basket.length) {
     return (
-      <div className="screen">
-        <div className="screen-body">
-          <StatusState
-            title="Nothing to compare"
-            message="Add items to the Kisse Loon cart first."
-            action={
-              <button type="button" className="btn btn-primary" onClick={() => router.push("/cart")}>
-                Back to cart
-              </button>
-            }
-          />
-        </div>
-      </div>
+      <SiteShell>
+        <StatusState
+          title="Nothing to compare"
+          message="Add items to the Kisse Loon cart first."
+          action={
+            <button type="button" className="btn btn-primary" onClick={() => router.push("/cart")}>
+              Back to cart
+            </button>
+          }
+        />
+      </SiteShell>
     );
   }
 

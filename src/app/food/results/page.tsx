@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { PageHeading, SiteShell } from "@/components/SiteShell";
@@ -14,42 +14,46 @@ const FILTERS = [
   { id: "time", label: "Delivery Time" },
 ];
 
+function timeStart(value: string) {
+  const minutes = parseInt(value.replace(/\D/g, " ").trim(), 10);
+  return Number.isFinite(minutes) ? minutes : 99;
+}
+
 function RestaurantCardView({
   restaurant,
   dishLabel,
+  badge,
   onSelect,
 }: {
   restaurant: RestaurantCard;
   dishLabel: string;
+  badge?: string;
   onSelect: () => void;
 }) {
   return (
     <button type="button" className="resto-card" onClick={onSelect}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={restaurant.image} alt="" />
+      <div className="resto-media">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={restaurant.image} alt="" />
+        {badge ? <span className="resto-badge">{badge}</span> : null}
+        <span className="resto-time">{restaurant.time}</span>
+      </div>
       <div className="resto-body">
-        <strong>{restaurant.name}</strong>
-        <p className="muted" style={{ margin: "4px 0" }}>
-          {restaurant.cuisine} · ★ {restaurant.rating}
-        </p>
-        <p className="muted" style={{ margin: "0 0 8px" }}>
-          {restaurant.time}
-        </p>
-        <div className="row">
-          <span className="muted" style={{ fontSize: 12 }}>
-            Available on
-          </span>
-          <div className="platform-logos">
-            {restaurant.platforms.map((platform) => (
-              <PlatformLogo key={platform} platform={platform} size={22} />
-            ))}
-          </div>
+        <div className="resto-top">
+          <h2>{restaurant.name}</h2>
+          <span className="resto-rating">★ {restaurant.rating}</span>
         </div>
-        <div className="row space-between" style={{ marginTop: 8 }}>
-          <span className="pill" style={{ background: "#e8f8ef", color: "#166534" }}>
-            {dishLabel} available
-          </span>
-          <span style={{ fontWeight: 700, fontSize: 13 }}>View restaurant →</span>
+        <p className="resto-cuisine">{restaurant.cuisine}</p>
+        <div className="resto-foot">
+          <span className="resto-dish">{dishLabel}</span>
+          <div className="resto-cta">
+            <span className="resto-apps" aria-label="Available on">
+              {restaurant.platforms.map((platform) => (
+                <PlatformLogo key={platform} platform={platform} size={22} />
+              ))}
+            </span>
+            <span className="resto-go">Compare</span>
+          </div>
         </div>
       </div>
     </button>
@@ -60,8 +64,30 @@ function Results() {
   const search = useSearchParams();
   const query = search.get("q") || "Chicken Biryani";
   const result = getDemoSearchResult(query);
-  const [filter, setFilter] = useState("time");
+  const [filter, setFilter] = useState("sort");
   const router = useRouter();
+
+  const ranked = useMemo(() => {
+    if (!result) return [];
+    const list = [...result.restaurants];
+    if (filter === "rating") {
+      return list.filter((item) => Number(item.rating) >= 4).sort((a, b) => Number(b.rating) - Number(a.rating));
+    }
+    if (filter === "time") {
+      return list.sort((a, b) => timeStart(a.time) - timeStart(b.time));
+    }
+    return list;
+  }, [filter, result]);
+
+  const topRatedId = useMemo(() => {
+    if (!result?.restaurants.length) return "";
+    return [...result.restaurants].sort((a, b) => Number(b.rating) - Number(a.rating))[0]?.id || "";
+  }, [result]);
+
+  const fastestId = useMemo(() => {
+    if (!result?.restaurants.length) return "";
+    return [...result.restaurants].sort((a, b) => timeStart(a.time) - timeStart(b.time))[0]?.id || "";
+  }, [result]);
 
   if (!result) {
     return (
@@ -82,8 +108,12 @@ function Results() {
 
   return (
     <SiteShell>
-      <PageHeading title={result.query} subtitle={`${result.location} · demo restaurant catalog`} />
-      <div className="stack">
+      <PageHeading
+        eyebrow="Restaurants"
+        title={result.query}
+        subtitle={`${result.restaurants.length} places · ${result.location} · demo catalog`}
+      />
+      <div className="stack resto-results">
         <div className="chip-row">
           {FILTERS.map((item) => (
             <button
@@ -96,18 +126,27 @@ function Results() {
             </button>
           ))}
         </div>
-        {result.restaurants.map((restaurant) => (
-          <RestaurantCardView
-            key={restaurant.id}
-            restaurant={restaurant}
-            dishLabel={result.query}
-            onSelect={() =>
-              router.push(
-                `/food/race/${restaurant.id}?q=${encodeURIComponent(result.query)}&play=${Date.now()}`,
-              )
-            }
-          />
-        ))}
+        <div className="resto-list">
+          {ranked.map((restaurant) => (
+            <RestaurantCardView
+              key={restaurant.id}
+              restaurant={restaurant}
+              dishLabel={result.query}
+              badge={
+                restaurant.id === topRatedId
+                  ? "Top rated"
+                  : restaurant.id === fastestId
+                    ? "Fastest"
+                    : undefined
+              }
+              onSelect={() =>
+                router.push(
+                  `/food/race/${restaurant.id}?q=${encodeURIComponent(result.query)}&play=${Date.now()}`,
+                )
+              }
+            />
+          ))}
+        </div>
       </div>
     </SiteShell>
   );

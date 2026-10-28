@@ -3,6 +3,7 @@
 import { Suspense, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AddToCartControl } from "@/components/QuantitySelector";
+import { PlatformLogo } from "@/components/PlatformLogo";
 import { PageHeading, SiteShell } from "@/components/SiteShell";
 import { StatusState } from "@/components/StatusState";
 import { useCart } from "@/context/CartContext";
@@ -33,6 +34,14 @@ function Menu() {
     },
   );
   const [category, setCategory] = useState(restaurant.categories[0]);
+  const visibleMenu = useMemo(() => {
+    if (category === "Popular") return restaurant.menu;
+    const words = category.toLowerCase().split(/\s+/).filter(Boolean);
+    return restaurant.menu.filter((item) => {
+      const hay = `${item.name} ${item.tag}`.toLowerCase();
+      return words.every((word) => hay.includes(word));
+    });
+  }, [category, restaurant.menu]);
 
   const restaurantLines = useMemo(
     () =>
@@ -71,11 +80,19 @@ function Menu() {
     return <StatusState title="Restaurant unavailable" message="This restaurant could not be loaded." />;
   }
 
+  const openItem = (itemId: string) => {
+    router.push(`/food/item/${itemId}?restaurant=${restaurant.id}&q=${encodeURIComponent(query)}`);
+  };
+
   return (
     <SiteShell>
-      <PageHeading title={restaurant.name} subtitle={`${restaurant.area} · add multiple dishes before comparing the cart`} />
+      <PageHeading
+        eyebrow="Menu"
+        title={restaurant.name}
+        subtitle={`${restaurant.cuisine} · ★ ${restaurant.rating} · ${restaurant.time} · demo catalog`}
+      />
       <div className="stack" style={{ paddingBottom: footerCount ? 96 : 0 }}>
-        <section className="hero-banner">
+        <section className="hero-banner menu-hero">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={restaurant.heroImage} alt="" />
           <div className="media-scrim" />
@@ -85,9 +102,8 @@ function Menu() {
                 OPEN NOW
               </span>
             ) : null}
-            <h2 style={{ margin: "10px 0 4px" }}>{restaurant.name}</h2>
             <p>
-              {restaurant.cuisine} • ★ {restaurant.rating} ({restaurant.reviews}) • {restaurant.time}
+              {restaurant.area} · {restaurant.reviews} reviews
             </p>
           </div>
         </section>
@@ -103,42 +119,55 @@ function Menu() {
             </button>
           ))}
         </div>
-        {restaurant.menu.map((item) => {
-          const qty = restaurantLines
-            .filter((line) => (line.productId || String(line.id).replace(/^food-/, "")) === item.id)
-            .reduce((sum, line) => sum + line.qty, 0);
-          const best = item.platforms.find((p) => p.best) || item.platforms[0];
-          return (
-            <article key={item.id} className="menu-card" style={{ display: "grid", gridTemplateColumns: "88px 1fr auto", gap: 12, padding: 12 }}>
-              <button
-                type="button"
-                style={{ border: 0, background: "transparent", padding: 0 }}
-                onClick={() => router.push(`/food/item/${item.id}?restaurant=${restaurant.id}&q=${encodeURIComponent(query)}`)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.image} alt="" style={{ width: 88, height: 88, objectFit: "cover", borderRadius: 14 }} />
-              </button>
-              <button
-                type="button"
-                style={{ border: 0, background: "transparent", textAlign: "left", padding: 0 }}
-                onClick={() => router.push(`/food/item/${item.id}?restaurant=${restaurant.id}&q=${encodeURIComponent(query)}`)}
-              >
-                <span className={`tag ${item.dietary === "VEG" ? "tag-veg" : "tag-nonveg"}`}>{item.tag}</span>
-                <h3 style={{ margin: "6px 0 4px", fontSize: 16 }}>{item.name}</h3>
-                <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                  {best ? `₹${best.price} best on ${best.label}` : "Tap for details"}
-                </p>
-              </button>
-              <AddToCartControl
-                qty={qty}
-                label={`Add ${item.name} to cart`}
-                onAdd={() => addFoodItem({ item, restaurant, quantity: 1 })}
-                onIncrement={() => addFoodItem({ item, restaurant, quantity: 1 })}
-                onDecrement={() => setQty(foodLineId(item.id), qty - 1)}
-              />
-            </article>
-          );
-        })}
+        <div className="resto-list menu-list">
+          {visibleMenu.map((item) => {
+            const qty = restaurantLines
+              .filter((line) => (line.productId || String(line.id).replace(/^food-/, "")) === item.id)
+              .reduce((sum, line) => sum + line.qty, 0);
+            const best = item.platforms.find((p) => p.best) || item.platforms[0];
+            return (
+              <article key={item.id} className="resto-card menu-card">
+                <div className="resto-media">
+                  <button type="button" className="menu-photo" onClick={() => openItem(item.id)}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.image} alt="" />
+                  </button>
+                  {item.tag ? <span className="resto-badge">{item.tag}</span> : null}
+                </div>
+                <button type="button" className="menu-main" onClick={() => openItem(item.id)}>
+                  <h2>{item.name}</h2>
+                  <p className="resto-cuisine">
+                    {item.savingsText || (best ? `Best on ${best.label}` : "Tap for details")}
+                  </p>
+                  <span className={`resto-dish ${item.dietary === "VEG" ? "is-veg" : "is-nonveg"}`}>
+                    {item.dietary}
+                  </span>
+                  <strong className="menu-price">{best ? `₹${best.price}` : "View"}</strong>
+                  <div className="resto-cta">
+                    <span className="resto-apps" aria-label="Available on">
+                      {item.platforms.map((platform) => (
+                        <PlatformLogo key={platform.id} platform={platform} size={22} />
+                      ))}
+                    </span>
+                    <span className="resto-go">View</span>
+                  </div>
+                </button>
+                <div className="menu-add">
+                  <AddToCartControl
+                    qty={qty}
+                    label={`Add ${item.name} to cart`}
+                    onAdd={() => addFoodItem({ item, restaurant, quantity: 1 })}
+                    onIncrement={() => addFoodItem({ item, restaurant, quantity: 1 })}
+                    onDecrement={() => setQty(foodLineId(item.id), qty - 1)}
+                  />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        {!visibleMenu.length ? (
+          <p className="muted">No dishes in {category} for this demo menu.</p>
+        ) : null}
       </div>
       {footerCount > 0 ? (
         <div className="footer-bar">
